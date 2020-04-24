@@ -1,12 +1,14 @@
 import pygame
 import time
 import random
+import board
 
 pygame.init()
 
 white = (255, 255, 255)
 yellow = (255, 255, 102)
 black = (0, 0, 0)
+gray = (128, 128, 128)
 red = (213, 50, 80)
 green = (0, 255, 0)
 blue = (50, 153, 213)
@@ -26,6 +28,14 @@ font_style = pygame.font.SysFont("bahnschrift", 25)
 score_font = pygame.font.SysFont("comicsansms", 35)
 
 
+map = board.getMap()
+
+def drawMap():
+    for idxR, row in enumerate(map):
+        for idxC, col in enumerate(row):
+            if(col == 100):
+                pygame.draw.rect(dis, black, [idxC * snake_block, idxR * snake_block, snake_block, snake_block])
+
 def Your_score(score):
     value = score_font.render("Your Score: " + str(score), True, yellow)
     dis.blit(value, [0, 0])
@@ -33,7 +43,7 @@ def Your_score(score):
 
 def our_snake(snake_block, snake_list):
     for x in snake_list:
-        pygame.draw.rect(dis, black, [x[0], x[1], snake_block, snake_block])
+        pygame.draw.rect(dis, gray, [x[0], x[1], snake_block, snake_block])
 
 
 def message(msg, color):
@@ -53,6 +63,7 @@ def gameLoop():
 
     snake_List = []
     Length_of_snake = 1
+
 
     foodx = round(random.randrange(0, dis_width - snake_block) / 10.0) * 10.0
     foody = round(random.randrange(0, dis_height - snake_block) / 10.0) * 10.0
@@ -90,8 +101,11 @@ def gameLoop():
                     y1_change = snake_block
                     x1_change = 0
 
-        if x1 >= dis_width or x1 < 0 or y1 >= dis_height or y1 < 0:
+        # if x1 >= dis_width or x1 < 0 or y1 >= dis_height or y1 < 0:
+        #     game_close = True
+        if map[int(y1 / snake_block)][int(x1 / snake_block)] >= 50:
             game_close = True
+            continue
         x1 += x1_change
         y1 += y1_change
         dis.fill(blue)
@@ -108,6 +122,7 @@ def gameLoop():
                 game_close = True
 
         our_snake(snake_block, snake_List)
+        drawMap()
         Your_score(Length_of_snake - 1)
 
         pygame.display.update()

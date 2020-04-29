@@ -2,6 +2,8 @@ import pygame
 import time
 import random
 import board
+import heapq as pq
+import heapq
 
 pygame.init()
 
@@ -17,7 +19,7 @@ dis_width = 600
 dis_height = 400
 
 dis = pygame.display.set_mode((dis_width, dis_height))
-pygame.display.set_caption('Snake Game by Best of Best of RiSA')
+pygame.display.set_caption('Snake Game')
 
 clock = pygame.time.Clock()
 
@@ -26,7 +28,6 @@ snake_speed = 15
 
 font_style = pygame.font.SysFont("bahnschrift", 25)
 score_font = pygame.font.SysFont("comicsansms", 35)
-
 
 map = board.getMap()
 
@@ -51,6 +52,12 @@ def message(msg, color):
     dis.blit(mesg, [dis_width / 6, dis_height / 3])
 
 
+def heuristics(st,end):
+    distance = abs(st[0] - end[0]) + abs(st[1] - end[1])
+    # distance = ((st[0]-end[0])**2 + (st[1]-end[1])**2)**0.5
+    return distance
+
+
 def gameLoop():
     game_over = False
     game_close = False
@@ -58,24 +65,62 @@ def gameLoop():
     x1 = dis_width / 2
     y1 = dis_height / 2
 
-    x1_change = 0
-    y1_change = 0
-
     snake_List = []
     Length_of_snake = 1
-
 
     foodx = round(random.randrange(0, dis_width - snake_block) / 10.0) * 10.0
     foody = round(random.randrange(0, dis_height - snake_block) / 10.0) * 10.0
 
     while not game_over:
 
+        start = (x1, y1)
+        end = (foodx, foody)
+        came_from = {}
+        gscore = {start: 0}
+        fscore = {start: heuristics(start, end)}
+
+        oheap = []
+        heapq.heappush(oheap, (fscore[start], start))
+
+        while oheap:
+
+            current = heapq.heappop(oheap)[1]
+            if current == end:
+                break
+            if map[int(current[1] / snake_block)][int(current[0] / snake_block)] != 100:
+                map[int(current[1] / snake_block)][int(current[0] / snake_block)] = 50
+                neighbours = []
+
+                for new in [(0,-snake_block ), (0,snake_block), (-snake_block, 0), (snake_block,0)]:
+                    position = (current[0] + new[0],current[1]+new[1])
+
+                    if map[int(position[1] / snake_block)][int(position[0] / snake_block)] != 100:
+                        neighbours.append(position)
+
+                for neigh in neighbours:
+                    cost = heuristics(current,neigh) + gscore[current]  # cost of the path
+                    if cost < gscore.get(neigh,0) or neigh not in gscore:
+                        came_from[neigh] = current
+                        gscore[neigh] = cost
+                        fscore[neigh] = cost + heuristics(neigh, end)
+                        pq.heappush(oheap, (fscore[neigh], neigh))
+
+        path = []
+        while current in came_from:
+            path.append(current)
+            current = came_from[current]
+        # path.append(start)
+        path = path[::-1]
+        # print("start",start)
+        # print("end",end)
+        # print("path",path)
+
+
         while game_close == True:
             dis.fill(blue)
             message("You Lost! Press C-Play Again or Q-Quit", red)
             Your_score(Length_of_snake - 1)
             pygame.display.update()
-
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_q:
@@ -84,48 +129,35 @@ def gameLoop():
                     if event.key == pygame.K_c:
                         gameLoop()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game_over = True
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    x1_change = -snake_block
-                    y1_change = 0
-                elif event.key == pygame.K_RIGHT:
-                    x1_change = snake_block
-                    y1_change = 0
-                elif event.key == pygame.K_UP:
-                    y1_change = -snake_block
-                    x1_change = 0
-                elif event.key == pygame.K_DOWN:
-                    y1_change = snake_block
-                    x1_change = 0
 
-        # if x1 >= dis_width or x1 < 0 or y1 >= dis_height or y1 < 0:
-        #     game_close = True
-        if map[int(y1 / snake_block)][int(x1 / snake_block)] >= 50:
+        if map[int(y1 / snake_block)][int(x1 / snake_block)] > 50:
             game_close = True
             continue
-        x1 += x1_change
-        y1 += y1_change
-        dis.fill(blue)
-        pygame.draw.rect(dis, green, [foodx, foody, snake_block, snake_block])
-        snake_Head = []
-        snake_Head.append(x1)
-        snake_Head.append(y1)
-        snake_List.append(snake_Head)
-        if len(snake_List) > Length_of_snake:
-            del snake_List[0]
+        for i in path:
+            x1_change = i[0] - x1
+            y1_change = i[1] - y1
+            x1 += x1_change
+            y1 += y1_change
 
-        for x in snake_List[:-1]:
-            if x == snake_Head:
-                game_close = True
+            dis.fill(blue)
+            pygame.draw.rect(dis, green, [foodx, foody, snake_block, snake_block])
+            snake_Head = []
+            snake_Head.append(x1)
+            snake_Head.append(y1)
+            snake_List.append(snake_Head)
+            if len(snake_List) > Length_of_snake:
+                del snake_List[0]
 
-        our_snake(snake_block, snake_List)
-        drawMap()
-        Your_score(Length_of_snake - 1)
+            for x in snake_List[:-1]:
+                if x == snake_Head:
+                    game_close = True
 
-        pygame.display.update()
+            our_snake(snake_block, snake_List)
+            drawMap()
+            Your_score(Length_of_snake - 1)
+            pygame.time.Clock().tick(8)
+            pygame.display.update()
+
 
         if x1 == foodx and y1 == foody:
             foodx = round(random.randrange(0, dis_width - snake_block) / 10.0) * 10.0

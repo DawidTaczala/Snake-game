@@ -18,6 +18,7 @@ blue = (50, 153, 213)
 dis_width = 600
 dis_height = 400
 
+
 dis = pygame.display.set_mode((dis_width, dis_height))
 pygame.display.set_caption('Snake Game')
 
@@ -29,7 +30,7 @@ snake_speed = 15
 font_style = pygame.font.SysFont("bahnschrift", 25)
 score_font = pygame.font.SysFont("comicsansms", 35)
 
-map = board.getMap()
+map = board.getMap(int(dis_width / snake_block), int(dis_height / snake_block))
 
 def drawMap():
     for idxR, row in enumerate(map):
@@ -53,9 +54,65 @@ def message(msg, color):
 
 
 def heuristics(st,end):
-    distance = abs(st[0] - end[0]) + abs(st[1] - end[1])
-    # distance = ((st[0]-end[0])**2 + (st[1]-end[1])**2)**0.5
+    distance = abs(st[0] - end[0]) + abs(st[1] - end[1]) # Manhattan
+    # distance = ((st[0]-end[0])**2 + (st[1]-end[1])**2)**0.5 # Euclidean
     return distance
+
+
+def find_path(x1, y1, foodx, foody, snakeList):
+    start = (x1, y1)
+    end = (foodx, foody)
+    came_from = {}
+    gscore = {start: 0}
+    fscore = {start: heuristics(start, end)}
+
+    oheap = []
+    heapq.heappush(oheap, (fscore[start], start))
+
+    map_copy = []
+    for r in map:
+        row = []
+        for c in r:
+            row.append(c)
+        map_copy.append(row)
+
+    for el in snakeList[:-1]:
+        map_copy[int(el[1] / snake_block)][int(el[0] / snake_block)] = 80
+
+    while oheap:
+
+        current = heapq.heappop(oheap)[1]
+        if current == end:
+            break
+        if map_copy[int(current[1] / snake_block)][int(current[0] / snake_block)] == 0:
+            map_copy[int(current[1] / snake_block)][int(current[0] / snake_block)] = 50
+            neighbours = []
+
+            for new in [(0, -snake_block), (0, snake_block), (-snake_block, 0), (snake_block, 0)]:
+                position = (current[0] + new[0], current[1] + new[1])
+
+                if map_copy[int(position[1] / snake_block)][int(position[0] / snake_block)] == 0:
+                    neighbours.append(position)
+
+            for neigh in neighbours:
+                cost = heuristics(current, neigh) + gscore[current]  # cost of the path
+                if cost < gscore.get(neigh, 0) or neigh not in gscore:
+                    came_from[neigh] = current
+                    gscore[neigh] = cost
+                    fscore[neigh] = cost + heuristics(neigh, end)
+                    pq.heappush(oheap, (fscore[neigh], neigh))
+
+    path = []
+    while current in came_from:
+        path.append(current)
+        current = came_from[current]
+    # path.append(start)
+    path = path[::-1]
+    # print("start",start)
+    # print("end",end)
+    # print("path",path)
+
+    return path
 
 
 def gameLoop():
@@ -68,53 +125,15 @@ def gameLoop():
     snake_List = []
     Length_of_snake = 1
 
-    foodx = round(random.randrange(0, dis_width - snake_block) / 10.0) * 10.0
-    foody = round(random.randrange(0, dis_height - snake_block) / 10.0) * 10.0
+    foodValid = False
+    while not foodValid:
+        foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
+        foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
+        if(map[int(foody / snake_block)][int(foodx / snake_block)] == 0):
+            foodValid = True
+    path = find_path(x1, y1, foodx, foody, snake_List)
 
     while not game_over:
-
-        start = (x1, y1)
-        end = (foodx, foody)
-        came_from = {}
-        gscore = {start: 0}
-        fscore = {start: heuristics(start, end)}
-
-        oheap = []
-        heapq.heappush(oheap, (fscore[start], start))
-
-        while oheap:
-
-            current = heapq.heappop(oheap)[1]
-            if current == end:
-                break
-            if map[int(current[1] / snake_block)][int(current[0] / snake_block)] != 100:
-                map[int(current[1] / snake_block)][int(current[0] / snake_block)] = 50
-                neighbours = []
-
-                for new in [(0,-snake_block ), (0,snake_block), (-snake_block, 0), (snake_block,0)]:
-                    position = (current[0] + new[0],current[1]+new[1])
-
-                    if map[int(position[1] / snake_block)][int(position[0] / snake_block)] != 100:
-                        neighbours.append(position)
-
-                for neigh in neighbours:
-                    cost = heuristics(current,neigh) + gscore[current]  # cost of the path
-                    if cost < gscore.get(neigh,0) or neigh not in gscore:
-                        came_from[neigh] = current
-                        gscore[neigh] = cost
-                        fscore[neigh] = cost + heuristics(neigh, end)
-                        pq.heappush(oheap, (fscore[neigh], neigh))
-
-        path = []
-        while current in came_from:
-            path.append(current)
-            current = came_from[current]
-        # path.append(start)
-        path = path[::-1]
-        # print("start",start)
-        # print("end",end)
-        # print("path",path)
-
 
         while game_close == True:
             dis.fill(blue)
@@ -133,6 +152,7 @@ def gameLoop():
         if map[int(y1 / snake_block)][int(x1 / snake_block)] > 50:
             game_close = True
             continue
+
         for i in path:
             x1_change = i[0] - x1
             y1_change = i[1] - y1
@@ -151,6 +171,10 @@ def gameLoop():
             for x in snake_List[:-1]:
                 if x == snake_Head:
                     game_close = True
+                    break
+
+            if(game_close):
+                break
 
             our_snake(snake_block, snake_List)
             drawMap()
@@ -160,9 +184,14 @@ def gameLoop():
 
 
         if x1 == foodx and y1 == foody:
-            foodx = round(random.randrange(0, dis_width - snake_block) / 10.0) * 10.0
-            foody = round(random.randrange(0, dis_height - snake_block) / 10.0) * 10.0
+            foodValid = False
+            while not foodValid:
+                foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
+                foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
+                if (map[int(foody / snake_block)][int(foodx / snake_block)] == 0):
+                    foodValid = True
             Length_of_snake += 1
+            path = find_path(x1, y1, foodx, foody, snake_List)
 
         clock.tick(snake_speed)
 

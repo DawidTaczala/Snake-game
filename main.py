@@ -15,7 +15,7 @@ red = (213, 50, 80)
 green = (0, 255, 0)
 blue = (50, 153, 213)
 
-snake_block = 1
+snake_block = 3
 snake_speed = 15 # don't know why we need this
 game_speed = 16
 
@@ -23,8 +23,8 @@ dis_width = 600
 dis_height = 400
 
 # map, width, height = board.Map1()
-# map, width, height = board.Map2()
-map, width, height = board.Map3()
+map, width, height = board.Map2()
+# map, width, height = board.Map3()
 dis_width = width * snake_block
 dis_height = height * snake_block
 

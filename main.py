@@ -4,6 +4,7 @@ import random
 import board
 import heapq as pq
 import heapq
+import argparse
 
 pygame.init()
 
@@ -15,20 +16,33 @@ red = (213, 50, 80)
 green = (0, 255, 0)
 blue = (50, 153, 213)
 
-snake_block = 3
+snake_block = 10
 snake_speed = 15 # don't know why we need this
 game_speed = 16
 
 dis_width = 600
 dis_height = 400
 
-# map, width, height = board.Map1()
-map, width, height = board.Map2()
-# map, width, height = board.Map3()
-dis_width = width * snake_block
-dis_height = height * snake_block
+# argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument("map", help="Number ofmap to play")
+args = parser.parse_args()
 
-# map = board.getEmptyMap(int(dis_width / snake_block), int(dis_height / snake_block))
+if str(args.map).lower() == "1":
+    map, width, height = board.Map1()
+    dis_width = width * snake_block
+    dis_height = height * snake_block
+elif str(args.map).lower() == "2":
+    map, width, height = board.Map2()
+    dis_width = width * snake_block
+    dis_height = height * snake_block
+elif str(args.map).lower() == "3":
+    map, width, height = board.Map3()
+    dis_width = width * snake_block
+    dis_height = height * snake_block
+else:
+    print("Map not found. Playing standard map")
+    map = board.getEmptyMap(int(dis_width / snake_block), int(dis_height / snake_block))
 
 dis = pygame.display.set_mode((dis_width, dis_height))
 pygame.display.set_caption('Snake Game')

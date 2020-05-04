@@ -15,22 +15,29 @@ red = (213, 50, 80)
 green = (0, 255, 0)
 blue = (50, 153, 213)
 
+snake_block = 10
+snake_speed = 15 # don't know why we need this
+game_speed = 16
+
 dis_width = 600
 dis_height = 400
 
+map, width, height = board.Map1()
+dis_width = width * snake_block
+dis_height = height * snake_block
+
+# map = board.getEmptyMap(int(dis_width / snake_block), int(dis_height / snake_block))
 
 dis = pygame.display.set_mode((dis_width, dis_height))
 pygame.display.set_caption('Snake Game')
 
 clock = pygame.time.Clock()
 
-snake_block = 10
-snake_speed = 15
 
 font_style = pygame.font.SysFont("bahnschrift", 25)
 score_font = pygame.font.SysFont("comicsansms", 35)
 
-map = board.getMap(int(dis_width / snake_block), int(dis_height / snake_block))
+
 
 def drawMap():
     for idxR, row in enumerate(map):
@@ -149,15 +156,20 @@ def gameLoop():
                         gameLoop()
 
 
-        if map[int(y1 / snake_block)][int(x1 / snake_block)] > 50:
-            game_close = True
-            continue
+        # if map[int(y1 / snake_block)][int(x1 / snake_block)] > 50:
+        #     game_close = True
+        #     continue
 
         for i in path:
             x1_change = i[0] - x1
             y1_change = i[1] - y1
+            if ((abs(x1_change) > snake_block) or (abs(y1_change) > snake_block)):
+                game_close = True
             x1 += x1_change
             y1 += y1_change
+
+            if map[int(y1 / snake_block)][int(x1 / snake_block)] >= 50:
+                game_close = True
 
             dis.fill(blue)
             pygame.draw.rect(dis, green, [foodx, foody, snake_block, snake_block])
@@ -179,7 +191,7 @@ def gameLoop():
             our_snake(snake_block, snake_List)
             drawMap()
             Your_score(Length_of_snake - 1)
-            pygame.time.Clock().tick(8)
+            # pygame.time.Clock().tick(game_speed)
             pygame.display.update()
 
 
@@ -188,8 +200,15 @@ def gameLoop():
             while not foodValid:
                 foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
                 foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
+                food = []
+                food.append(foodx)
+                food.append(foody)
                 if (map[int(foody / snake_block)][int(foodx / snake_block)] == 0):
                     foodValid = True
+                for block in snake_List:
+                    if (food == block):
+                        foodValid = False
+                        break
             Length_of_snake += 1
             path = find_path(x1, y1, foodx, foody, snake_List)
 

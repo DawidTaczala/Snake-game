@@ -15,7 +15,7 @@ red = (213, 50, 80)
 green = (0, 255, 0)
 blue = (50, 153, 213)
 
-snake_block = 2
+snake_block = 4
 snake_speed = 15 # don't know why we need this
 game_speed = 16
 
@@ -53,7 +53,7 @@ def Your_score(score):
 
 def our_snake(snake_block, snake_list):
     for x in snake_list:
-        pygame.draw.rect(dis, gray, [x[0], x[1], snake_block, snake_block])
+        pygame.draw.rect(dis, red, [x[0], x[1], snake_block, snake_block])
 
 
 def message(msg, color):

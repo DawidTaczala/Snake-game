@@ -41,6 +41,22 @@ def Map1():
 
     return map, width, height
 
+def Map2():
+    map_np = cv2.imread("Map2.png", cv2.IMREAD_GRAYSCALE)
+    map = map_np.tolist()
+    map = generateBorder(map)
+    height = len(map)
+    width = len(map[0])
+
+    for idx_r, r in enumerate(map):
+        for idx_c, c in enumerate(r):
+            if (c == 255):
+                map[idx_r][idx_c] = 0
+            else:
+                map[idx_r][idx_c] = 100
+
+    return map, width, height
+
 def emptyMap(width = 60, height = 40):
     grid = []
     for r in range(height):

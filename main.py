@@ -25,7 +25,7 @@ dis_height = 400
 
 # argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument("map", help="Number ofmap to play")
+parser.add_argument("map", help="Number of map to play")
 args = parser.parse_args()
 
 if str(args.map).lower() == "1":
@@ -48,6 +48,7 @@ dis = pygame.display.set_mode((dis_width, dis_height))
 pygame.display.set_caption('Snake Game')
 
 clock = pygame.time.Clock()
+# random.seed(10)
 
 
 font_style = pygame.font.SysFont("bahnschrift", 25)
@@ -176,6 +177,7 @@ def gameLoop():
         #     game_close = True
         #     continue
 
+        count = 5
         for i in path:
             x1_change = i[0] - x1
             y1_change = i[1] - y1
@@ -210,6 +212,11 @@ def gameLoop():
             # pygame.time.Clock().tick(game_speed)
             pygame.display.update()
 
+            count -= 1
+            if (count <= 0):
+                break
+
+        path = find_path(x1, y1, foodx, foody, snake_List)
 
         if x1 == foodx and y1 == foody:
             foodValid = False
@@ -227,6 +234,10 @@ def gameLoop():
                         break
             Length_of_snake += 1
             path = find_path(x1, y1, foodx, foody, snake_List)
+
+        if(len(path) == 0):
+            game_close = True
+            print("Path not found. Killing myself")
 
         clock.tick(snake_speed)
 

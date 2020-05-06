@@ -18,10 +18,11 @@ blue = (50, 153, 213)
 
 snake_block = 10
 snake_speed = 15 # don't know why we need this
-game_speed = 16
+game_speed = 100000
 
 dis_width = 600
 dis_height = 400
+
 
 # argument parser
 parser = argparse.ArgumentParser()
@@ -48,12 +49,11 @@ dis = pygame.display.set_mode((dis_width, dis_height))
 pygame.display.set_caption('Snake Game')
 
 clock = pygame.time.Clock()
-# random.seed(10)
-
+random.seed(15)
+rand = random.Random()
 
 font_style = pygame.font.SysFont("bahnschrift", 25)
 score_font = pygame.font.SysFont("comicsansms", 35)
-
 
 
 def drawMap():
@@ -79,7 +79,10 @@ def message(msg, color):
 
 def heuristics(st,end):
     distance = abs(st[0] - end[0]) + abs(st[1] - end[1]) # Manhattan
-    # distance = ((st[0]-end[0])**2 + (st[1]-end[1])**2)**0.5 # Euclidean
+    return distance
+
+def heur(st,end):
+    distance = ((st[0]-end[0])**2 + (st[1]-end[1])**2)**0.5 # Euclidean
     return distance
 
 
@@ -119,7 +122,17 @@ def find_path(x1, y1, foodx, foody, snakeList):
                     neighbours.append(position)
 
             for neigh in neighbours:
-                cost = heuristics(current, neigh) + gscore[current]  # cost of the path
+                cost1 = heuristics(current, neigh) + gscore[current] # cost of the path
+                cost2 = heur(current,neigh) + 1
+
+                if cost1 < cost2:
+                    cost = cost1
+                    print("YEEEEEEEEEEEEEEEEEEEEEEEEH")
+                else:
+                    cost = cost2
+                    print("88")
+
+
                 if cost < gscore.get(neigh, 0) or neigh not in gscore:
                     came_from[neigh] = current
                     gscore[neigh] = cost
@@ -130,11 +143,7 @@ def find_path(x1, y1, foodx, foody, snakeList):
     while current in came_from:
         path.append(current)
         current = came_from[current]
-    # path.append(start)
     path = path[::-1]
-    # print("start",start)
-    # print("end",end)
-    # print("path",path)
 
     return path
 
@@ -157,6 +166,9 @@ def gameLoop():
             foodValid = True
     path = find_path(x1, y1, foodx, foody, snake_List)
 
+
+
+
     while not game_over:
 
         while game_close == True:
@@ -172,10 +184,6 @@ def gameLoop():
                     if event.key == pygame.K_c:
                         gameLoop()
 
-
-        # if map[int(y1 / snake_block)][int(x1 / snake_block)] > 50:
-        #     game_close = True
-        #     continue
 
         count = 5
         for i in path:
@@ -215,7 +223,6 @@ def gameLoop():
             count -= 1
             if (count <= 0):
                 break
-
         path = find_path(x1, y1, foodx, foody, snake_List)
 
         if x1 == foodx and y1 == foody:
@@ -238,6 +245,7 @@ def gameLoop():
         if(len(path) == 0):
             game_close = True
             print("Path not found. Killing myself")
+
 
         clock.tick(snake_speed)
 

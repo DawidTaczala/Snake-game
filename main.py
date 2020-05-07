@@ -48,7 +48,7 @@ dis = pygame.display.set_mode((dis_width, dis_height))
 pygame.display.set_caption('Snake Game')
 
 clock = pygame.time.Clock()
-random.seed(15)
+random.seed(10)
 rand = random.Random()
 
 font_style = pygame.font.SysFont("bahnschrift", 25)
@@ -78,10 +78,6 @@ def message(msg, color):
 
 def heuristics(st,end):
     distance = abs(st[0] - end[0]) + abs(st[1] - end[1]) # Manhattan
-    return distance
-
-def heur(st,end):
-    distance = ((st[0]-end[0])**2 + (st[1]-end[1])**2)**0.5 # Euclidean
     return distance
 
 
@@ -137,6 +133,90 @@ def find_path(x1, y1, foodx, foody, snakeList):
 
     return path
 
+def blind_path(x1,y1,x1_change, y1_change,snakeList):
+
+    map_copy = []
+    for r in map:
+        row = []
+        for c in r:
+            row.append(c)
+        map_copy.append(row)
+
+    for el in snakeList[:-1]:
+        map_copy[int(el[1] / snake_block)][int(el[0] / snake_block)] = 80
+    counter = 4
+
+    while counter:
+        next = []
+        next.append(x1 + x1_change)
+        next.append(y1 + y1_change)
+
+        if (map_copy[int(next[1] / snake_block)][int(next[0] / snake_block)] == 0):
+            next2 = []
+            next2.append(x1 + x1_change*2)
+            next2.append(y1 + y1_change*2)
+            if (map_copy[int(next2[1] / snake_block)][int(next2[0] / snake_block)] == 0):
+                return [next]
+
+            if ((x1_change > 0) and (y1_change == 0)):
+                x1_change = 0
+                y1_change = snake_block
+            elif ((x1_change == 0) and (y1_change > 0)):
+                x1_change = -snake_block
+                y1_change = 0
+            elif ((x1_change < 0) and (y1_change == 0)):
+                x1_change = 0
+                y1_change = -snake_block
+            elif ((x1_change == 0) and (y1_change < 0)):
+                x1_change = snake_block
+                y1_change = 0
+        else:
+            if ((x1_change > 0) and (y1_change == 0)):
+                x1_change = 0
+                y1_change = snake_block
+            elif ((x1_change == 0) and (y1_change > 0)):
+                x1_change = -snake_block
+                y1_change = 0
+            elif ((x1_change < 0) and (y1_change == 0)):
+                x1_change = 0
+                y1_change = -snake_block
+            elif ((x1_change == 0) and (y1_change < 0)):
+                x1_change = snake_block
+                y1_change = 0
+
+        counter -= 1
+
+    counter = 4
+
+    while counter:
+        next = []
+        next.append(x1 + x1_change)
+        next.append(y1 + y1_change)
+
+        if (map_copy[int(next[1] / snake_block)][int(next[0] / snake_block)] == 0):
+            return [next]
+        else:
+            if ((x1_change > 0) and (y1_change == 0)):
+                x1_change = 0
+                y1_change = snake_block
+            elif ((x1_change == 0) and (y1_change > 0)):
+                x1_change = -snake_block
+                y1_change = 0
+            elif ((x1_change < 0) and (y1_change == 0)):
+                x1_change = 0
+                y1_change = -snake_block
+            elif ((x1_change == 0) and (y1_change < 0)):
+                x1_change = snake_block
+                y1_change = 0
+
+        counter -= 1
+
+
+    return []
+
+
+
+
 
 def gameLoop():
     game_over = False
@@ -156,6 +236,7 @@ def gameLoop():
             foodValid = True
     path = find_path(x1, y1, foodx, foody, snake_List)
 
+    count = 0
 
     while not game_over:
 
@@ -172,8 +253,8 @@ def gameLoop():
                     if event.key == pygame.K_c:
                         gameLoop()
 
-
-        count = 5
+        if (count <= 0):
+            count = 5
         for i in path:
             x1_change = i[0] - x1
             y1_change = i[1] - y1
@@ -229,11 +310,13 @@ def gameLoop():
                         break
             Length_of_snake += 1
             path = find_path(x1, y1, foodx, foody, snake_List)
-
-        if(len(path) == 0):
+        if (len(path) == 0):
             game_close = True
             print("Path not found. Killing myself")
+            continue
 
+        if not(path[-1] == (foodx,foody)):
+            path = blind_path(x1, y1, x1_change, y1_change, snake_List)
 
         clock.tick(snake_speed)
 

@@ -18,7 +18,7 @@ blue = (50, 153, 213)
 
 snake_block = 10
 snake_speed = 15 # don't know why we need this
-game_speed = 100000
+game_speed = 64
 
 dis_width = 600
 dis_height = 400
@@ -212,7 +212,7 @@ def blind_path(x1,y1,x1_change, y1_change,snakeList):
         counter -= 1
 
 
-    return []
+    return [[(x1 + x1_change), (y1 + y1_change)]] # go straight
 
 
 
@@ -310,12 +310,12 @@ def gameLoop():
                         break
             Length_of_snake += 1
             path = find_path(x1, y1, foodx, foody, snake_List)
-        if (len(path) == 0):
-            game_close = True
-            print("Path not found. Killing myself")
-            continue
+        # if (len(path) == 0):
+        #     game_close = True
+        #     print("Path not found. Killing myself")
+        #     continue
 
-        if not(path[-1] == (foodx,foody)):
+        if ((len(path) == 0) or (not(path[-1] == (foodx,foody)))):
             path = blind_path(x1, y1, x1_change, y1_change, snake_List)
 
         clock.tick(snake_speed)

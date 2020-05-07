@@ -23,7 +23,6 @@ game_speed = 100000
 dis_width = 600
 dis_height = 400
 
-
 # argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument("map", help="Number of map to play")
@@ -122,16 +121,7 @@ def find_path(x1, y1, foodx, foody, snakeList):
                     neighbours.append(position)
 
             for neigh in neighbours:
-                cost1 = heuristics(current, neigh) + gscore[current] # cost of the path
-                cost2 = heur(current,neigh) + 1
-
-                if cost1 < cost2:
-                    cost = cost1
-                    print("YEEEEEEEEEEEEEEEEEEEEEEEEH")
-                else:
-                    cost = cost2
-                    print("88")
-
+                cost = heuristics(current, neigh) + gscore[current] # cost of the path
 
                 if cost < gscore.get(neigh, 0) or neigh not in gscore:
                     came_from[neigh] = current
@@ -165,8 +155,6 @@ def gameLoop():
         if(map[int(foody / snake_block)][int(foodx / snake_block)] == 0):
             foodValid = True
     path = find_path(x1, y1, foodx, foody, snake_List)
-
-
 
 
     while not game_over:

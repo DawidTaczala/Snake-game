@@ -5,6 +5,7 @@ import board
 import heapq as pq
 import heapq
 import argparse
+from threading import Thread
 
 pygame.init()
 
@@ -18,10 +19,19 @@ blue = (50, 153, 213)
 
 snake_block = 10
 snake_speed = 15 # don't know why we need this
-game_speed = 64
+game_speed = 512
 
 dis_width = 600
 dis_height = 400
+
+x1 = None
+y1 = None
+foodx = None
+foody = None
+snake_List = None
+search_for_path = False
+global_finish = False
+path = []
 
 # argument parser
 parser = argparse.ArgumentParser()
@@ -80,10 +90,82 @@ def heuristics(st,end):
     distance = abs(st[0] - end[0]) + abs(st[1] - end[1]) # Manhattan
     return distance
 
+# def find_path(x1, y1, foodx, foody, snakeList):
+def find_path():
+    global path
+    global search_for_path
+    global x1
+    global y1
+    global foodx
+    global foody
+    global snake_List
+    global global_finish
 
-def find_path(x1, y1, foodx, foody, snakeList):
+    while True:
+        if(not search_for_path):
+            continue
+        start = (x1, y1)
+        end = (foodx, foody)
+        came_from = {}
+        gscore = {start: 0}
+        fscore = {start: heuristics(start, end)}
+
+        oheap = []
+        heapq.heappush(oheap, (fscore[start], start))
+
+        map_copy = []
+        for r in map:
+            row = []
+            for c in r:
+                row.append(c)
+            map_copy.append(row)
+
+        for el in snake_List[:-1]:
+            map_copy[int(el[1] / snake_block)][int(el[0] / snake_block)] = 80
+
+        while oheap:
+
+            current = heapq.heappop(oheap)[1]
+            if current == end:
+                break
+            if map_copy[int(current[1] / snake_block)][int(current[0] / snake_block)] == 0:
+                map_copy[int(current[1] / snake_block)][int(current[0] / snake_block)] = 50
+                neighbours = []
+
+                for new in [(0, -snake_block), (0, snake_block), (-snake_block, 0), (snake_block, 0)]:
+                    position = (current[0] + new[0], current[1] + new[1])
+
+                    if map_copy[int(position[1] / snake_block)][int(position[0] / snake_block)] == 0:
+                        neighbours.append(position)
+
+                for neigh in neighbours:
+                    cost = heuristics(current, neigh) + gscore[current] # cost of the path
+
+                    if cost < gscore.get(neigh, 0) or neigh not in gscore:
+                        came_from[neigh] = current
+                        gscore[neigh] = cost
+                        fscore[neigh] = cost + heuristics(neigh, end)
+                        pq.heappush(oheap, (fscore[neigh], neigh))
+
+        temp_path = []
+        while current in came_from:
+            temp_path.append(current)
+            current = came_from[current]
+        temp_path = temp_path[::-1]
+        path = temp_path.copy()
+        search_for_path = False
+        global_finish = True
+        # return path
+
+def find_local_path(endx, endy):
+    global path
+    global search_for_path
+    global x1
+    global y1
+    global snake_List
+
     start = (x1, y1)
-    end = (foodx, foody)
+    end = (endx, endy)
     came_from = {}
     gscore = {start: 0}
     fscore = {start: heuristics(start, end)}
@@ -98,7 +180,7 @@ def find_path(x1, y1, foodx, foody, snakeList):
             row.append(c)
         map_copy.append(row)
 
-    for el in snakeList[:-1]:
+    for el in snake_List[:-1]:
         map_copy[int(el[1] / snake_block)][int(el[0] / snake_block)] = 80
 
     while oheap:
@@ -125,13 +207,13 @@ def find_path(x1, y1, foodx, foody, snakeList):
                     fscore[neigh] = cost + heuristics(neigh, end)
                     pq.heappush(oheap, (fscore[neigh], neigh))
 
-    path = []
+    temp_path = []
     while current in came_from:
-        path.append(current)
+        temp_path.append(current)
         current = came_from[current]
-    path = path[::-1]
+    temp_path = temp_path[::-1]
 
-    return path
+    return temp_path
 
 def blind_path(x1,y1,x1_change, y1_change,snakeList):
 
@@ -214,11 +296,85 @@ def blind_path(x1,y1,x1_change, y1_change,snakeList):
 
     return [[(x1 + x1_change), (y1 + y1_change)]] # go straight
 
+def evaluate_new_path():
+    global path
+    global snake_List
+    global x1, y1
+    map_copy = []
+    for r in map:
+        row = []
+        for c in r:
+            row.append(c)
+        map_copy.append(row)
+    for el in snake_List[:-1]:
+        map_copy[int(el[1] / snake_block)][int(el[0] / snake_block)] = 80
 
+    shortest_dist = 99999999999
+    shortest_idx = 0
+    for idx, el in enumerate(path):
+        if (map_copy[int(el[1] / snake_block)][int(el[0] / snake_block)] == 0):
+            distance = ((el[0] - x1)**2 + (el[1] - y1)**2)**0.5  # Euclidean
+            if(distance < shortest_dist):
+                shortest_dist = distance
+                shortest_idx = idx
+
+    for i in range(shortest_idx):
+        path.pop(0)
+    for i in range(len(path)):
+        if(not len(path)):
+            break
+        # elem = [path[shortest_idx][0], path[shortest_idx][1]]
+        elem = [path[0][0], path[0][1]]
+        # if (map_copy[int(elem[1] / snake_block)][int(elem[0] / snake_block)] == 0):
+        short_path = find_local_path(elem[0], elem[1])
+        if(len(short_path)):
+            # print("")
+            # print("Short before:", short_path)
+            while(short_path[-1] == path[0]):
+                short_path.pop(-1)
+                if (not len(short_path)):
+                    break
+
+        short_copy = short_path.copy()
+        for el in short_copy:
+            if el in path:
+                short_path.pop(0)
+            else:
+                break
+
+        # print("FoodX:", foodx, "FoodY:", foody)
+        # print("Short:", short_path)
+        # print("Full:", path)
+        short_path.extend(path)
+        if(len(short_path)):
+            if((short_path[0][0] == x1) and (short_path[0][1] == y1)):
+                short_path.pop(0)
+        path = short_path.copy()
+        return
+        # else:
+        #     path.pop(0)
+
+    return
 
 
 
 def gameLoop():
+    astar = Thread(target=find_path)
+    global search_for_path
+    global global_finish
+    global x1
+    global y1
+    global foodx
+    global foody
+    global snake_List
+    global path
+
+    search_for_path = False
+    astar.start()
+
+    x1_change = snake_block
+    y1_change = 0
+
     game_over = False
     game_close = False
 
@@ -234,7 +390,8 @@ def gameLoop():
         foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
         if(map[int(foody / snake_block)][int(foodx / snake_block)] == 0):
             foodValid = True
-    path = find_path(x1, y1, foodx, foody, snake_List)
+    # path = find_path(x1, y1, foodx, foody, snake_List)
+    search_for_path = True
 
     count = 0
 
@@ -255,11 +412,28 @@ def gameLoop():
 
         if (count <= 0):
             count = 5
+            search_for_path = True
+        if(global_finish):
+            if(len(path)):
+                if(path[-1] == (foodx,foody)):
+                    evaluate_new_path()
+            global_finish = False
+
+        path_copy = path.copy()
+
         for i in path:
+            if (global_finish):
+                break
+            if(len(path_copy)):
+                path_copy.pop(0)
+            x1_change_temp = i[0] - x1
+            y1_change_temp = i[1] - y1
+            if ((i[0] == x1) and (i[1] == y1)): # if next step is the same point, where the snake currently is
+                continue
+            if ((abs(x1_change_temp) > snake_block) or (abs(y1_change_temp) > snake_block)):
+                continue
             x1_change = i[0] - x1
             y1_change = i[1] - y1
-            if ((abs(x1_change) > snake_block) or (abs(y1_change) > snake_block)):
-                game_close = True
             x1 += x1_change
             y1 += y1_change
 
@@ -286,13 +460,16 @@ def gameLoop():
             our_snake(snake_block, snake_List)
             drawMap()
             Your_score(Length_of_snake - 1)
-            # pygame.time.Clock().tick(game_speed)
+            pygame.time.Clock().tick(game_speed)
             pygame.display.update()
 
             count -= 1
             if (count <= 0):
+                if(not global_finish):
+                    path = path_copy.copy()
                 break
-        path = find_path(x1, y1, foodx, foody, snake_List)
+        # path = find_path(x1, y1, foodx, foody, snake_List)
+        # search_for_path = True
 
         if x1 == foodx and y1 == foody:
             foodValid = False
@@ -309,7 +486,10 @@ def gameLoop():
                         foodValid = False
                         break
             Length_of_snake += 1
-            path = find_path(x1, y1, foodx, foody, snake_List)
+            # path = find_path(x1, y1, foodx, foody, snake_List)
+            search_for_path = True
+            path = []
+            continue
         # if (len(path) == 0):
         #     game_close = True
         #     print("Path not found. Killing myself")
@@ -318,7 +498,7 @@ def gameLoop():
         if ((len(path) == 0) or (not(path[-1] == (foodx,foody)))):
             path = blind_path(x1, y1, x1_change, y1_change, snake_List)
 
-        clock.tick(snake_speed)
+        # clock.tick(snake_speed)
 
     pygame.quit()
     quit()

@@ -53,6 +53,10 @@ elif str(args.map).lower() == "3":
     map, width, height = board.Map3()
     dis_width = width * snake_block
     dis_height = height * snake_block
+elif str(args.map).lower() == "4":
+    map, width, height = board.Map4()
+    dis_width = width * snake_block
+    dis_height = height * snake_block
 else:
     print("Map not found. Playing standard map")
     map = board.getEmptyMap(int(dis_width / snake_block), int(dis_height / snake_block))
@@ -369,7 +373,7 @@ def evaluate_new_path():
     for el in snake_List[:-1]:
         map_copy[int(el[1] / snake_block)][int(el[0] / snake_block)] = 80
 
-    # Finding the shortest distance from the local to the found gloabl path
+    # Finding the shortest distance from the local to the found global path
     shortest_dist = 99999999999
     shortest_idx = 0
     for idx, el in enumerate(path):
@@ -379,17 +383,18 @@ def evaluate_new_path():
                 shortest_dist = distance
                 shortest_idx = idx
 
-
     for i in range(shortest_idx):
         path.pop(0)
     for i in range(len(path)):
         if(not len(path)):
             break
+
+        # Find the closest vertex in the graph to path
         elem = [path[0][0], path[0][1]]
         short_path = find_local_path(elem[0], elem[1])
         if(len(short_path)):
 
-            while(short_path[-1] == path[0]):
+            while(short_path[-1] == path[0]): # Until there will bo no repeated vertex in short path, so we can connect those paths
                 short_path.pop(-1)
                 if (not len(short_path)):
                     break
@@ -397,12 +402,14 @@ def evaluate_new_path():
         short_copy = short_path.copy()
         for el in short_copy:
             if el in path:
-                short_path.pop(0)
+                short_path.pop(0) # Delete repeated vertex from short path
             else:
                 break
 
-        short_path.extend(path)
+        short_path.extend(path) # Add short path to the path
         if(len(short_path)):
+
+            # Delete the head of snake from the path
             if((short_path[0][0] == x1) and (short_path[0][1] == y1)):
                 short_path.pop(0)
         path = short_path.copy()
@@ -410,7 +417,9 @@ def evaluate_new_path():
 
     return
 
+# The main code
 def gameLoop():
+    #Initialize values
     astar = Thread(target=find_path)
     global search_for_path
     global global_finish
@@ -422,7 +431,7 @@ def gameLoop():
     global path
 
     search_for_path = False
-    astar.start() # starting the thread
+    astar.start() # Starting the thread
 
     x1_change = snake_block
     y1_change = 0
@@ -441,10 +450,10 @@ def gameLoop():
     while not foodValid:
         foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
         foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
-        if(map[int(foody / snake_block)][int(foodx / snake_block)] == 0): # prevent getting food on the obstacle or snake body
+        if(map[int(foody / snake_block)][int(foodx / snake_block)] == 0): # Prevent getting food on the obstacle
             foodValid = True
 
-    search_for_path = True # start searching global path
+    search_for_path = True # Start searching global path
 
     count = 0
 
@@ -452,8 +461,8 @@ def gameLoop():
 
         while game_close == True:
             dis.fill(blue)
-            message("You Lost! Press C-Play Again or Q-Quit", red) # shows the meassage on the screen
-            Your_score(Length_of_snake - 1) # the obtained score
+            message("You Lost! Press C-Play Again or Q-Quit", red) # Shows the meassage on the screen
+            Your_score(Length_of_snake - 1) # The obtained score
             pygame.display.update() # Updates the screen
             for event in pygame.event.get(): # All the actions that take place on the screen
                 if event.type == pygame.KEYDOWN:
@@ -469,7 +478,7 @@ def gameLoop():
         if(global_finish):
             if(len(path)):
                 if(path[-1] == (foodx,foody)):
-                    evaluate_new_path() # start connecting the found path with the global path
+                    evaluate_new_path() # Start connecting the found path with the global path
             global_finish = False
 
         path_copy = path.copy()
@@ -481,16 +490,16 @@ def gameLoop():
                 path_copy.pop(0)
             x1_change_temp = i[0] - x1
             y1_change_temp = i[1] - y1
-            if ((i[0] == x1) and (i[1] == y1)): # if next step is the same point, where the snake currently is
+            if ((i[0] == x1) and (i[1] == y1)): # If next step is the same point, where the snake currently is
                 continue
-            if ((abs(x1_change_temp) > snake_block) or (abs(y1_change_temp) > snake_block)): # if the next step is higher than the snake body
+            if ((abs(x1_change_temp) > snake_block) or (abs(y1_change_temp) > snake_block)): # If the next step is higher than the snake body
                 continue
             x1_change = i[0] - x1
             y1_change = i[1] - y1
             x1 += x1_change
             y1 += y1_change
 
-            if map[int(y1 / snake_block)][int(x1 / snake_block)] >= 50: # if there is an obstacle
+            if map[int(y1 / snake_block)][int(x1 / snake_block)] >= 50: # If there is an obstacle
                 game_close = True
 
             dis.fill(blue)
@@ -498,7 +507,7 @@ def gameLoop():
             snake_Head = []
             snake_Head.append(x1)
             snake_Head.append(y1)
-            snake_List.append(snake_Head)
+            snake_List.append(snake_Head) # Add the new coordinates to the snake body
             if len(snake_List) > Length_of_snake:
                 del snake_List[0]
 
@@ -510,7 +519,7 @@ def gameLoop():
             if(game_close):
                 break
 
-            our_snake(snake_block, snake_List)
+            our_snake(snake_block, snake_List) # Draw snake
             drawMap() # Draws the map
             Your_score(Length_of_snake - 1) # Shows the score
             pygame.time.Clock().tick(game_speed) #  Helps tracking time
@@ -524,6 +533,7 @@ def gameLoop():
 
         if x1 == foodx and y1 == foody:
             foodValid = False
+
             #  Get the random position of the food
             while not foodValid:
                 foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
@@ -531,10 +541,10 @@ def gameLoop():
                 food = []
                 food.append(foodx)
                 food.append(foody)
-                if (map[int(foody / snake_block)][int(foodx / snake_block)] == 0): # prevent getting food on the obstacle or snake body
+                if (map[int(foody / snake_block)][int(foodx / snake_block)] == 0): # Prevent getting food on the obstacle
                     foodValid = True
                 for block in snake_List:
-                    if (food == block):
+                    if (food == block): # Prevent getting food on  snake body
                         foodValid = False
                         break
             Length_of_snake += 1
@@ -542,6 +552,7 @@ def gameLoop():
             path = []
             continue
 
+        # If there's no path or the food isn't found -> play on time
         if ((len(path) == 0) or (not(path[-1] == (foodx,foody)))):
             path = blind_path(x1, y1, x1_change, y1_change, snake_List)
 
@@ -549,6 +560,5 @@ def gameLoop():
     # Initialize and uninitialize everything at the start and the end of the code
     pygame.quit()
     quit()
-
 
 gameLoop()

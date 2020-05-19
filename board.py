@@ -71,6 +71,24 @@ def Map3():
 
     return map, width, height
 
+# Initializing the fourth map
+def Map4():
+    map_np = cv2.imread("Map4.png", cv2.IMREAD_GRAYSCALE)
+    map = map_np.tolist()
+    map = generateBorder(map)
+    height = len(map)
+    width = len(map[0])
+
+    # change of pixel value to the map environment
+    for idx_r, r in enumerate(map):
+        for idx_c, c in enumerate(r):
+            if (c == 255): # white color -> movement space
+                map[idx_r][idx_c] = 0
+            else: # black color -> obstacle
+                map[idx_r][idx_c] = 100
+
+    return map, width, height
+
 # Initializing empty map
 def emptyMap(width = 60, height = 40):
     grid = []

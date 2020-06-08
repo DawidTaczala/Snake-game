@@ -88,13 +88,6 @@ def message(msg, color):
     dis.blit(mesg, [dis_width / 6, dis_height / 3])
 
 
-# # Calculating the heuristics of the distance
-# def heuristics(st, end):
-#     # distance = ((st[0] - end[0])**2 + (st[1] - end[1])**2)**(0.5)  # Euclidean
-#     distance = abs(st[0] - end[0]) + abs(st[1] - end[1])  # Manhattan
-#     return distance
-
-
 # Find the global path (thread)
 def find_path():
     # Use global variables

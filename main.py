@@ -1,7 +1,5 @@
 import pygame
 import board
-# import heapq as pq
-# import heapq
 import argparse
 from threading import Thread
 from utils import check_neighbors, generate_food, copy_map, find_path_a_star
@@ -27,7 +25,7 @@ game_speed = 512
 dis_width = 600
 dis_height = 400
 
-########### Global variables defines initial values
+########### Global variables defines initial values ###########
 # Position of snake
 x1 = 0
 y1 = 0
@@ -41,7 +39,7 @@ search_for_path = False
 global_finish = False
 # Found path
 path = []
-###########
+################################################################
 
 # Argument parser
 parser = argparse.ArgumentParser()
